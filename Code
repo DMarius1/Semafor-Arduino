@@ -1,0 +1,83 @@
+#include <avr/interrupt.h>
+#include <LiquidCrystal.h>
+
+const int rs = 12, en = 11, d4 = 6, d5 = 5, d6 = 4, d7 = 3;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+int contor ;
+
+//tratarea intreruperii 
+ISR(INT0_vect)
+{
+  //dezactivare intreruperi globale
+  SREG &= ~( 1 << SREG_I);
+  
+  //verificare stare a ledului
+  if((PORTC & (1 << PC2)) == 0)  // low
+  {
+    PORTC |= (1 << PC2);
+    PORTC |= (1 << PC3);
+    PORTC &= ~(1<<PC4);
+    PORTC &= ~(1<<PC5);
+    
+  }
+  else // high 
+  { contor = 5;
+    //Afisare timp pana la schimbarea starii led-ului
+    while(contor!=0){	
+    lcd.print("Timp ramas :");
+    lcd.print(contor);
+    delay(2000);
+    contor--;
+  lcd.clear();}
+   
+    PORTC &= ~(1 << PC2);
+    PORTC &= ~(1 << PC3);
+    PORTC |= (1<<PC4);
+    PORTC |= (1<<PC5);
+   delay(2000);
+   
+  }
+  
+  //activare intreruperi globale
+  SREG |= (1 << SREG_I);
+}
+
+void setup()
+{
+  lcd.begin(16, 2);
+  
+  //Configurare PORTC ca iesire
+  	DDRD = 0x00;
+  	DDRC = 0x00;
+  
+  DDRC = (1 << PC3);
+  DDRC = (1 << PC2);
+  
+  //activare intreruperi globale  
+  SREG |= (1 << SREG_I);
+  
+  //Configurare intreruperi
+  
+  //La apasarea butonului se va incepe intreruperea
+  //ce va porni semaforul 
+  //Rosu la pietoni - verde la masini
+  //respectiv o a 2-a apasare, verde pietoni, rosu-masini
+  
+  // trecerea LOW-HIGH pe pinul INT0 genereaza intreruperea
+  EICRA = ( 0 << ISC11 ) | ( 0 <<ISC10 ) | ( 1 << ISC01 ) | ( 1 << ISC00);
+  
+  // activare masca INT0 (activare intrerupere INT0)
+  EIMSK = ( 0 << INT1 ) | ( 1 << INT0 );
+ 
+  // restarea bitilor ce marcheza intreruperea
+  EIFR = ( 0 << INTF1 ) | ( 0 << INTF0 );
+  
+  // dezactivarea intreruperii la nivel de port
+  PCICR = ( 0 << PCIE2 ) | ( 0 << PCIE1 ) | ( 0 << PCIE0 );
+
+}
+
+void loop()
+{
+  
+}
